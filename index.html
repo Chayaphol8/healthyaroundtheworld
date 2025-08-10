@@ -1,17 +1,210 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Personality Quiz</title>
-  <link rel="stylesheet" href="styles.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Food Preference Quiz</title>
+    <!-- Use Tailwind CSS for modern, responsive styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Use Inter font from Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+    </style>
 </head>
-<body>
-  <div id="quiz-container">
-    <h1>What's Your Personality Type?</h1>
-    <div id="question"></div>
-    <div id="options"></div>
-    <button id="next-btn">Next</button>
-    <div id="result"></div>
-  </div>
-  <script src="script.js"></script>
+<body class="bg-slate-50 flex items-center justify-center min-h-screen p-4">
+
+    <!-- Main container for the quiz app -->
+    <div class="bg-white rounded-2xl shadow-2xl p-6 sm:p-10 w-full max-w-2xl text-center flex flex-col gap-6">
+
+        <h1 class="text-3xl sm:text-4xl font-bold text-gray-800">What Should I Eat?</h1>
+
+        <!-- The main quiz content area -->
+        <div id="quiz-container" class="flex flex-col gap-6">
+            <!-- This section will be populated by JavaScript -->
+        </div>
+
+        <!-- Result section, hidden initially -->
+        <div id="result-container" class="hidden flex flex-col items-center gap-6">
+            <h2 class="text-2xl sm:text-3xl font-semibold text-gray-700">Your Recommendation:</h2>
+            <p id="result-text" class="text-xl sm:text-2xl text-gray-600 font-medium"></p>
+            <p id="recommendation-text" class="text-md sm:text-lg text-gray-500"></p>
+            <button id="restart-button" class="mt-4 px-6 py-3 bg-indigo-600 text-white font-bold rounded-full shadow-lg hover:bg-indigo-700 transition-colors duration-200">
+                Restart Quiz
+            </button>
+        </div>
+
+        <!-- A message box for displaying alerts without using `alert()` -->
+        <div id="message-box" class="fixed top-0 left-1/2 -translate-x-1/2 mt-4 px-6 py-3 bg-red-500 text-white rounded-lg shadow-lg hidden">
+            <p id="message-text">Please select an option.</p>
+        </div>
+
+    </div>
+
+    <script>
+        // Store all quiz questions, answers, and the associated food categories.
+        // The `foodCategory` key links an answer to a specific food preference.
+        const quizQuestions = [
+            {
+                question: "What's your ideal Friday night?",
+                answers: [
+                    { text: "A quiet movie night on the couch.", foodCategory: "comfort" },
+                    { text: "Dinner with friends at a trendy new spot.", foodCategory: "exotic" },
+                    { text: "Cooking a healthy meal at home.", foodCategory: "healthy" },
+                    { text: "A fun and lively get-together with great music.", foodCategory: "spicy" }
+                ]
+            },
+            {
+                question: "Which flavor profile do you crave most often?",
+                answers: [
+                    { text: "Something warm and familiar.", foodCategory: "comfort" },
+                    { text: "Bold and exciting new tastes.", foodCategory: "exotic" },
+                    { text: "Fresh and clean.", foodCategory: "healthy" },
+                    { text: "A kick of heat and spice.", foodCategory: "spicy" }
+                ]
+            },
+            {
+                question: "What's your favorite type of weather?",
+                answers: [
+                    { text: "A sunny, clear day.", foodCategory: "healthy" },
+                    { text: "A cool, rainy day indoors.", foodCategory: "comfort" },
+                    { text: "A hot, humid summer evening.", foodCategory: "spicy" },
+                    { text: "A breezy, autumn afternoon.", foodCategory: "exotic" }
+                ]
+            },
+            {
+                question: "How do you feel about trying new foods?",
+                answers: [
+                    { text: "I love to try anything and everything!", foodCategory: "exotic" },
+                    { text: "I'll try it if it looks good, but I prefer my favorites.", foodCategory: "comfort" },
+                    { text: "I'm cautious but willing if it seems healthy.", foodCategory: "healthy" },
+                    { text: "I'm always up for a challenge and some bold flavors.", foodCategory: "spicy" }
+                ]
+            },
+            {
+                question: "What's your ideal vacation?",
+                answers: [
+                    { text: "A relaxing beach vacation.", foodCategory: "healthy" },
+                    { text: "Exploring a vibrant, bustling city.", foodCategory: "exotic" },
+                    { text: "A cozy cabin retreat in the mountains.", foodCategory: "comfort" },
+                    { text: "Hiking and adventuring somewhere wild.", foodCategory: "spicy" }
+                ]
+            }
+        ];
+
+        // Recommendations for each food category.
+        const recommendations = {
+            comfort: {
+                title: "Comfort Food",
+                description: "You're a fan of the familiar and the cozy. You enjoy food that brings a sense of nostalgia and warmth. We recommend something classic and hearty, like a delicious Mac 'n' Cheese, a savory shepherd's pie, or a warm bowl of tomato soup with grilled cheese."
+            },
+            exotic: {
+                title: "Exotic Flavors",
+                description: "You have an adventurous palate and love to explore new cultures through food. You seek out unique and exciting flavor combinations. We recommend trying something from a different cuisine, like Thai Green Curry, Ethiopian Doro Wat, or a vibrant bowl of Pho."
+            },
+            healthy: {
+                title: "Healthy Greens",
+                description: "You prioritize clean, fresh, and wholesome food. You enjoy meals that make you feel energized and nourished. We recommend a vibrant and healthy dish, like a Quinoa Salad with roasted vegetables, a fresh Poke Bowl, or a hearty lentil soup."
+            },
+            spicy: {
+                title: "Spicy Food",
+                description: "You're a thrill-seeker when it comes to food! You love dishes that pack a punch and get your taste buds tingling. We recommend something with a kick, like spicy Korean BBQ, a fiery bowl of ramen, or a flavorful Mexican street taco with extra hot sauce."
+            }
+        };
+
+        // DOM elements
+        const quizContainer = document.getElementById('quiz-container');
+        const resultContainer = document.getElementById('result-container');
+        const resultText = document.getElementById('result-text');
+        const recommendationText = document.getElementById('recommendation-text');
+        const restartButton = document.getElementById('restart-button');
+
+        // State variables
+        let currentQuestionIndex = 0;
+        let scores = {
+            comfort: 0,
+            exotic: 0,
+            healthy: 0,
+            spicy: 0
+        };
+
+        // Function to start the quiz
+        function startQuiz() {
+            quizContainer.innerHTML = `
+                <p class="text-lg text-gray-600">Answer these questions to discover your perfect food recommendation!</p>
+                <button id="start-button" class="mt-4 px-6 py-3 bg-indigo-600 text-white font-bold rounded-full shadow-lg hover:bg-indigo-700 transition-colors duration-200">
+                    Start Quiz
+                </button>
+            `;
+            document.getElementById('start-button').addEventListener('click', loadQuestion);
+        }
+
+        // Function to load and display the current question
+        function loadQuestion() {
+            // Check if there are more questions
+            if (currentQuestionIndex < quizQuestions.length) {
+                const questionData = quizQuestions[currentQuestionIndex];
+                
+                // Construct the HTML for the question and its answers
+                const questionHtml = `
+                    <p class="text-xl sm:text-2xl font-semibold text-gray-700 mb-4">${questionData.question}</p>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        ${questionData.answers.map(answer => `
+                            <button onclick="selectAnswer('${answer.foodCategory}')" class="px-4 py-3 bg-gray-100 text-gray-700 font-medium rounded-xl border-2 border-transparent hover:border-indigo-500 hover:shadow-md transition-all duration-200 text-left">
+                                ${answer.text}
+                            </button>
+                        `).join('')}
+                    </div>
+                `;
+                
+                quizContainer.innerHTML = questionHtml;
+                resultContainer.classList.add('hidden');
+            } else {
+                // If no more questions, show the results
+                showResult();
+            }
+        }
+
+        // Function to handle answer selection
+        function selectAnswer(category) {
+            scores[category]++;
+            currentQuestionIndex++;
+            loadQuestion();
+        }
+
+        // Function to determine and display the final result
+        function showResult() {
+            // Find the food category with the highest score
+            const highestScore = Math.max(...Object.values(scores));
+            const winningCategory = Object.keys(scores).find(key => scores[key] === highestScore);
+            const recommendation = recommendations[winningCategory];
+
+            // Display the result content
+            resultText.textContent = recommendation.title;
+            recommendationText.textContent = recommendation.description;
+            
+            quizContainer.classList.add('hidden');
+            resultContainer.classList.remove('hidden');
+        }
+
+        // Function to reset the quiz
+        function restartQuiz() {
+            currentQuestionIndex = 0;
+            scores = { comfort: 0, exotic: 0, healthy: 0, spicy: 0 };
+            startQuiz();
+            quizContainer.classList.remove('hidden');
+            resultContainer.classList.add('hidden');
+        }
+
+        // Add event listener for the restart button
+        restartButton.addEventListener('click', restartQuiz);
+
+        // Start the quiz when the page loads
+        document.addEventListener('DOMContentLoaded', startQuiz);
+    </script>
 </body>
 </html>
