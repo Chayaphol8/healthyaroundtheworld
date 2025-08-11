@@ -14,14 +14,64 @@
         body {
             font-family: 'Inter', sans-serif;
         }
+        /* Custom styles for the animated toggle button */
+        .toggle-container {
+            position: relative;
+            background-color: #e5e7eb; /* gray-200 */
+            border-radius: 9999px; /* rounded-full */
+            width: 7rem; /* Adjusted width for better look */
+            padding: 0.25rem; /* p-1 */
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+        }
+
+        .toggle-indicator {
+            position: absolute;
+            height: calc(100% - 0.5rem); /* Adjusted height to match padding */
+            width: calc(50% - 0.25rem); /* Adjusted width to match padding */
+            background-color: white;
+            border-radius: 9999px;
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); /* ease-in-out */
+            z-index: 1;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+        }
+
+        .toggle-container.en .toggle-indicator {
+            transform: translateX(0);
+        }
+
+        .toggle-container.th .toggle-indicator {
+            transform: translateX(100%);
+        }
+
+        .toggle-label {
+            width: 50%;
+            text-align: center;
+            font-weight: 600; /* font-semibold */
+            color: #4b5563; /* gray-700 */
+            transition: color 0.3s;
+            z-index: 2;
+        }
+        .toggle-label.active {
+            color: #4338ca; /* indigo-700 */
+        }
     </style>
 </head>
 <body class="bg-slate-50 flex items-center justify-center min-h-screen p-4">
 
     <!-- Main container for the quiz app -->
-    <div class="bg-white rounded-2xl shadow-2xl p-6 sm:p-10 w-full max-w-2xl text-center flex flex-col gap-6">
+    <div class="bg-white rounded-2xl shadow-2xl p-6 sm:p-10 w-full max-w-2xl text-center flex flex-col gap-6 relative">
 
-        <h1 class="text-3xl sm:text-4xl font-bold text-gray-800">What Should I Eat?</h1>
+        <!-- Language toggle button with animation -->
+        <div id="language-toggle-container" class="absolute top-4 right-4 sm:top-6 sm:right-6 toggle-container">
+            <div id="toggle-indicator" class="toggle-indicator"></div>
+            <span id="en-label" class="toggle-label">EN</span>
+            <span id="th-label" class="toggle-label">TH</span>
+        </div>
+
+        <h1 id="quiz-title" class="text-3xl sm:text-4xl font-bold text-gray-800"></h1>
 
         <!-- The main quiz content area -->
         <div id="quiz-container" class="flex flex-col gap-6">
@@ -30,11 +80,11 @@
 
         <!-- Result section, hidden initially -->
         <div id="result-container" class="hidden flex flex-col items-center gap-6">
-            <h2 class="text-2xl sm:text-3xl font-semibold text-gray-700">Your Recommendation:</h2>
+            <h2 id="result-heading" class="text-2xl sm:text-3xl font-semibold text-gray-700"></h2>
             <p id="result-text" class="text-xl sm:text-2xl text-gray-600 font-medium"></p>
             <p id="recommendation-text" class="text-md sm:text-lg text-gray-500"></p>
             <button id="restart-button" class="mt-4 px-6 py-3 bg-indigo-600 text-white font-bold rounded-full shadow-lg hover:bg-indigo-700 transition-colors duration-200">
-                Restart Quiz
+                
             </button>
         </div>
 
@@ -46,110 +96,210 @@
     </div>
 
     <script>
-        // Store all quiz questions, answers, and the associated food categories.
-        // The `foodCategory` key links an answer to a specific food preference.
-        const quizQuestions = [
-            {
-                question: "What's your ideal Friday night?",
-                answers: [
-                    { text: "A quiet movie night on the couch.", foodCategory: "comfort" },
-                    { text: "Dinner with friends at a trendy new spot.", foodCategory: "exotic" },
-                    { text: "Cooking a healthy meal at home.", foodCategory: "healthy" },
-                    { text: "A fun and lively get-together with great music.", foodCategory: "spicy" }
-                ]
+        // Language translations object
+        const translations = {
+            en: {
+                title: "What Should I Eat?",
+                startPrompt: "Answer these questions to discover your perfect food recommendation!",
+                startButton: "Start Quiz",
+                resultHeading: "Your Recommendation:",
+                restartButton: "Restart Quiz",
             },
-            {
-                question: "Which flavor profile do you crave most often?",
-                answers: [
-                    { text: "Something warm and familiar.", foodCategory: "comfort" },
-                    { text: "Bold and exciting new tastes.", foodCategory: "exotic" },
-                    { text: "Fresh and clean.", foodCategory: "healthy" },
-                    { text: "A kick of heat and spice.", foodCategory: "spicy" }
-                ]
-            },
-            {
-                question: "What's your favorite type of weather?",
-                answers: [
-                    { text: "A sunny, clear day.", foodCategory: "healthy" },
-                    { text: "A cool, rainy day indoors.", foodCategory: "comfort" },
-                    { text: "A hot, humid summer evening.", foodCategory: "spicy" },
-                    { text: "A breezy, autumn afternoon.", foodCategory: "exotic" }
-                ]
-            },
-            {
-                question: "How do you feel about trying new foods?",
-                answers: [
-                    { text: "I love to try anything and everything!", foodCategory: "exotic" },
-                    { text: "I'll try it if it looks good, but I prefer my favorites.", foodCategory: "comfort" },
-                    { text: "I'm cautious but willing if it seems healthy.", foodCategory: "healthy" },
-                    { text: "I'm always up for a challenge and some bold flavors.", foodCategory: "spicy" }
-                ]
-            },
-            {
-                question: "What's your ideal vacation?",
-                answers: [
-                    { text: "A relaxing beach vacation.", foodCategory: "healthy" },
-                    { text: "Exploring a vibrant, bustling city.", foodCategory: "exotic" },
-                    { text: "A cozy cabin retreat in the mountains.", foodCategory: "comfort" },
-                    { text: "Hiking and adventuring somewhere wild.", foodCategory: "spicy" }
-                ]
+            th: {
+                title: "คุณควรทานอะไรดี?",
+                startPrompt: "ตอบคำถามเหล่านี้เพื่อค้นหาคำแนะนำอาหารที่สมบูรณ์แบบของคุณ!",
+                startButton: "เริ่มทำแบบทดสอบ",
+                resultHeading: "คำแนะนำของคุณ:",
+                restartButton: "เริ่มใหม่",
             }
-        ];
+        };
 
-        // Recommendations for each food category.
-        const recommendations = {
-            comfort: {
-                title: "Comfort Food",
-                description: "You're a fan of the familiar and the cozy. You enjoy food that brings a sense of nostalgia and warmth. We recommend something classic and hearty, like a delicious Mac 'n' Cheese, a savory shepherd's pie, or a warm bowl of tomato soup with grilled cheese."
+        // This object now holds all quiz data for both languages.
+        const quizData = {
+            en: {
+                quizQuestions: [
+                    {
+                        question: "What's your ideal Friday night?",
+                        answers: [
+                            { text: "A quiet movie night on the couch.", foodCategory: "comfort" },
+                            { text: "Dinner with friends at a trendy new spot.", foodCategory: "exotic" },
+                            { text: "Cooking a healthy meal at home.", foodCategory: "healthy" },
+                            { text: "A fun and lively get-together with great music.", foodCategory: "spicy" }
+                        ]
+                    },
+                    {
+                        question: "Which flavor profile do you crave most often?",
+                        answers: [
+                            { text: "Something warm and familiar.", foodCategory: "comfort" },
+                            { text: "Bold and exciting new tastes.", foodCategory: "exotic" },
+                            { text: "Fresh and clean.", foodCategory: "healthy" },
+                            { text: "A kick of heat and spice.", foodCategory: "spicy" }
+                        ]
+                    },
+                    {
+                        question: "What's your favorite type of weather?",
+                        answers: [
+                            { text: "A sunny, clear day.", foodCategory: "healthy" },
+                            { text: "A cool, rainy day indoors.", foodCategory: "comfort" },
+                            { text: "A hot, humid summer evening.", foodCategory: "spicy" },
+                            { text: "A breezy, autumn afternoon.", foodCategory: "exotic" }
+                        ]
+                    }
+                ],
+                recommendations: {
+                    comfort: {
+                        title: "Comfort Food",
+                        description: "You're a fan of the familiar and the cozy. We recommend something classic and hearty, like a delicious Mac 'n' Cheese or a warm bowl of tomato soup."
+                    },
+                    exotic: {
+                        title: "Exotic Flavors",
+                        description: "You have an adventurous palate and love to explore new cultures through food. We recommend trying something from a different cuisine, like Thai Green Curry or Vietnamese Pho."
+                    },
+                    healthy: {
+                        title: "Healthy Greens",
+                        description: "You prioritize clean, fresh, and wholesome food. We recommend a vibrant and healthy dish, like a Quinoa Salad with roasted vegetables or a fresh Poke Bowl."
+                    },
+                    spicy: {
+                        title: "Spicy Food",
+                        description: "You're a thrill-seeker when it comes to food! We recommend something with a kick, like spicy Korean BBQ or a fiery bowl of ramen."
+                    }
+                }
             },
-            exotic: {
-                title: "Exotic Flavors",
-                description: "You have an adventurous palate and love to explore new cultures through food. You seek out unique and exciting flavor combinations. We recommend trying something from a different cuisine, like Thai Green Curry, Ethiopian Doro Wat, or a vibrant bowl of Pho."
-            },
-            healthy: {
-                title: "Healthy Greens",
-                description: "You prioritize clean, fresh, and wholesome food. You enjoy meals that make you feel energized and nourished. We recommend a vibrant and healthy dish, like a Quinoa Salad with roasted vegetables, a fresh Poke Bowl, or a hearty lentil soup."
-            },
-            spicy: {
-                title: "Spicy Food",
-                description: "You're a thrill-seeker when it comes to food! You love dishes that pack a punch and get your taste buds tingling. We recommend something with a kick, like spicy Korean BBQ, a fiery bowl of ramen, or a flavorful Mexican street taco with extra hot sauce."
+            th: {
+                quizQuestions: [
+                    {
+                        question: "คืนวันศุกร์ในอุดมคติของคุณคืออะไร?",
+                        answers: [
+                            { text: "ดูหนังเงียบๆ บนโซฟา.", foodCategory: "comfort" },
+                            { text: "ทานอาหารเย็นกับเพื่อนที่ร้านอาหารใหม่ๆ.", foodCategory: "exotic" },
+                            { text: "ทำอาหารเพื่อสุขภาพทานเองที่บ้าน.", foodCategory: "healthy" },
+                            { text: "ปาร์ตี้สนุกๆ กับเสียงเพลงที่ครึกครื้น.", foodCategory: "spicy" }
+                        ]
+                    },
+                    {
+                        question: "คุณโหยหารสชาติแบบไหนบ่อยที่สุด?",
+                        answers: [
+                            { text: "รสชาติที่คุ้นเคยและอบอุ่น.", foodCategory: "comfort" },
+                            { text: "รสชาติใหม่ๆ ที่โดดเด่นและน่าตื่นเต้น.", foodCategory: "exotic" },
+                            { text: "รสชาติที่สดชื่นและสะอาด.", foodCategory: "healthy" },
+                            { text: "รสชาติที่เผ็ดร้อนและจัดจ้าน.", foodCategory: "spicy" }
+                        ]
+                    },
+                    {
+                        question: "สภาพอากาศแบบไหนที่คุณชอบที่สุด?",
+                        answers: [
+                            { text: "วันที่แดดออกและสดใส.", foodCategory: "healthy" },
+                            { text: "วันที่อากาศเย็นๆ ฝนตก.", foodCategory: "comfort" },
+                            { text: "ตอนเย็นของฤดูร้อนที่ร้อนอบอ้าว.", foodCategory: "spicy" },
+                            { text: "บ่ายแก่ๆ ของฤดูใบไม้ร่วงที่อากาศเย็นสบาย.", foodCategory: "exotic" }
+                        ]
+                    }
+                ],
+                recommendations: {
+                    comfort: {
+                        title: "อาหารที่สร้างความสบายใจ",
+                        description: "คุณเป็นคนที่ชอบความคุ้นเคยและอบอุ่น เราแนะนำอาหารคลาสสิกและอร่อย เช่น มักกะโรนีและชีส หรือซุปมะเขือเทศร้อนๆ."
+                    },
+                    exotic: {
+                        title: "อาหารนานาชาติ",
+                        description: "คุณมีรสนิยมชอบผจญภัยและชอบสำรวจวัฒนธรรมใหม่ๆ ผ่านอาหาร เราแนะนำให้ลองอาหารจากต่างประเทศ เช่น แกงเขียวหวานไทย หรือเฝอเวียดนาม."
+                    },
+                    healthy: {
+                        title: "อาหารเพื่อสุขภาพ",
+                        description: "คุณให้ความสำคัญกับอาหารที่สดใหม่ สะอาด และมีประโยชน์ เราแนะนำอาหารที่มีชีวิตชีวาและดีต่อสุขภาพ เช่น สลัดคีนัวกับผักย่าง หรือโพเกะโบลว์."
+                    },
+                    spicy: {
+                        title: "อาหารรสเผ็ด",
+                        description: "คุณเป็นคนที่ชอบความตื่นเต้นเมื่อพูดถึงอาหาร! เราแนะนำอาหารที่มีรสชาติเผ็ดร้อน เช่น หมูย่างเกาหลีรสเผ็ด หรือราเมนชามร้อนแรง."
+                    }
+                }
             }
         };
 
         // DOM elements
+        const languageToggleContainer = document.getElementById('language-toggle-container');
+        const enLabel = document.getElementById('en-label');
+        const thLabel = document.getElementById('th-label');
+        const quizTitle = document.getElementById('quiz-title');
         const quizContainer = document.getElementById('quiz-container');
         const resultContainer = document.getElementById('result-container');
+        const resultHeading = document.getElementById('result-heading');
         const resultText = document.getElementById('result-text');
         const recommendationText = document.getElementById('recommendation-text');
         const restartButton = document.getElementById('restart-button');
 
         // State variables
+        let currentLanguage = 'en'; // Default language is English
         let currentQuestionIndex = 0;
-        let scores = {
-            comfort: 0,
-            exotic: 0,
-            healthy: 0,
-            spicy: 0
-        };
+        let scores = {}; // Scores will be reset based on the categories
+        let quizState = 'start'; // 'start', 'quiz', 'result'
 
-        // Function to start the quiz
-        function startQuiz() {
+        // Function to set the language and update all text on the page
+        function setLanguage(lang) {
+            currentLanguage = lang;
+            const t = translations[currentLanguage];
+            quizTitle.textContent = t.title;
+            resultHeading.textContent = t.resultHeading;
+            restartButton.textContent = t.restartButton;
+            
+            // Update the toggle button's visual state
+            languageToggleContainer.classList.remove('en', 'th');
+            languageToggleContainer.classList.add(lang);
+            enLabel.classList.remove('active');
+            thLabel.classList.remove('active');
+            if (lang === 'en') {
+                enLabel.classList.add('active');
+            } else {
+                thLabel.classList.add('active');
+            }
+
+            // Re-render the current screen with the new language
+            if (quizState === 'start') {
+                renderStartScreen();
+            } else if (quizState === 'quiz') {
+                loadQuestion();
+            } else if (quizState === 'result') {
+                showResult();
+            }
+        }
+
+        // Function to toggle between languages
+        function toggleLanguage() {
+            setLanguage(currentLanguage === 'en' ? 'th' : 'en');
+        }
+        
+        // Renders the initial start screen
+        function renderStartScreen() {
+            const t = translations[currentLanguage];
             quizContainer.innerHTML = `
-                <p class="text-lg text-gray-600">Answer these questions to discover your perfect food recommendation!</p>
+                <p class="text-lg text-gray-600">${t.startPrompt}</p>
                 <button id="start-button" class="mt-4 px-6 py-3 bg-indigo-600 text-white font-bold rounded-full shadow-lg hover:bg-indigo-700 transition-colors duration-200">
-                    Start Quiz
+                    ${t.startButton}
                 </button>
             `;
-            document.getElementById('start-button').addEventListener('click', loadQuestion);
+            document.getElementById('start-button').addEventListener('click', startQuiz);
+            quizContainer.classList.remove('hidden');
+            resultContainer.classList.add('hidden');
+        }
+
+        // Function to start the quiz from the beginning
+        function startQuiz() {
+            currentQuestionIndex = 0;
+            quizState = 'quiz';
+            // Reset scores based on the new quiz data
+            scores = {};
+            const categories = Object.keys(quizData[currentLanguage].recommendations);
+            categories.forEach(cat => scores[cat] = 0);
+            
+            loadQuestion();
         }
 
         // Function to load and display the current question
         function loadQuestion() {
-            // Check if there are more questions
-            if (currentQuestionIndex < quizQuestions.length) {
-                const questionData = quizQuestions[currentQuestionIndex];
+            const currentQuizQuestions = quizData[currentLanguage].quizQuestions;
+            if (currentQuestionIndex < currentQuizQuestions.length) {
+                const questionData = currentQuizQuestions[currentQuestionIndex];
                 
-                // Construct the HTML for the question and its answers
                 const questionHtml = `
                     <p class="text-xl sm:text-2xl font-semibold text-gray-700 mb-4">${questionData.question}</p>
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -164,7 +314,6 @@
                 quizContainer.innerHTML = questionHtml;
                 resultContainer.classList.add('hidden');
             } else {
-                // If no more questions, show the results
                 showResult();
             }
         }
@@ -178,12 +327,12 @@
 
         // Function to determine and display the final result
         function showResult() {
-            // Find the food category with the highest score
+            quizState = 'result';
+            const currentRecommendations = quizData[currentLanguage].recommendations;
             const highestScore = Math.max(...Object.values(scores));
             const winningCategory = Object.keys(scores).find(key => scores[key] === highestScore);
-            const recommendation = recommendations[winningCategory];
+            const recommendation = currentRecommendations[winningCategory];
 
-            // Display the result content
             resultText.textContent = recommendation.title;
             recommendationText.textContent = recommendation.description;
             
@@ -191,20 +340,20 @@
             resultContainer.classList.remove('hidden');
         }
 
-        // Function to reset the quiz
+        // Function to restart the quiz
         function restartQuiz() {
-            currentQuestionIndex = 0;
-            scores = { comfort: 0, exotic: 0, healthy: 0, spicy: 0 };
-            startQuiz();
-            quizContainer.classList.remove('hidden');
-            resultContainer.classList.add('hidden');
+            quizState = 'start';
+            renderStartScreen();
         }
 
-        // Add event listener for the restart button
+        // Add event listeners
+        languageToggleContainer.addEventListener('click', toggleLanguage);
         restartButton.addEventListener('click', restartQuiz);
 
-        // Start the quiz when the page loads
-        document.addEventListener('DOMContentLoaded', startQuiz);
+        // Initial setup
+        document.addEventListener('DOMContentLoaded', () => {
+            setLanguage('en');
+        });
     </script>
 </body>
 </html>
