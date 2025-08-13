@@ -62,19 +62,16 @@
 <body class="bg-slate-50 flex items-center justify-center min-h-screen p-4">
 
     <!-- Main container for the quiz app -->
-    <div class="bg-white rounded-2xl shadow-2xl p-6 sm:p-10 w-full max-w-2xl text-center flex flex-col gap-6 relative">
+    <div class="bg-white rounded-2xl shadow-2xl p-6 sm:p-10 pt-20 sm:pt-24 w-full max-w-2xl text-center flex flex-col gap-6 relative">
 
-        <!-- Header row with title and language toggle -->
-        <div class="flex justify-between items-center w-full">
-            <h1 id="quiz-title" class="text-3xl sm:text-4xl font-bold text-gray-800 text-left w-full"></h1>
-
-            <!-- Language toggle button with animation -->
-            <div id="language-toggle-container" class="toggle-container flex-shrink-0 ml-4">
-                <div id="toggle-indicator" class="toggle-indicator"></div>
-                <span id="en-label" class="toggle-label">EN</span>
-                <span id="th-label" class="toggle-label">TH</span>
-            </div>
+        <!-- Language toggle button with animation -->
+        <div id="language-toggle-container" class="absolute top-4 right-4 sm:top-6 sm:right-6 toggle-container">
+            <div id="toggle-indicator" class="toggle-indicator"></div>
+            <span id="en-label" class="toggle-label">EN</span>
+            <span id="th-label" class="toggle-label">TH</span>
         </div>
+
+        <h1 id="quiz-title" class="text-3xl sm:text-4xl font-bold text-gray-800"></h1>
 
         <!-- The main quiz content area -->
         <div id="quiz-container" class="flex flex-col gap-6">
